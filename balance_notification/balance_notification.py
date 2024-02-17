@@ -203,7 +203,7 @@ if __name__ == '__main__':
             else:
                 print(f'Script Running: All currencies are in the acceptable range!')
 
-            # Sleep for 5 minutes
-            time.sleep(300)
+            # Sleep for 3 minutes
+            time.sleep(180)
     except KeyboardInterrupt:
         print('Script Closing: You are now on your own')
