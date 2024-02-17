@@ -17,18 +17,14 @@ TOWER_SECRET_KEY = str(os.getenv("TOWER_SECRET_KEY"))
 LIVE_SERVER_HOST = str(os.getenv("LIVE_SERVER_HOST"))
 BOT_CHANNEL = str(os.getenv("BOT_CHANNEL"))
 BOT_USER_NAME = str(os.getenv("BOT_USER_NAME"))
-
-# Cache for limits data
-limits_cache = None
-CACHE_EXPIRATION = 36000  # Cache expiration time in seconds (10 hour)
+BALANCE_LIMIT_URL = str(os.getenv("BALANCE_LIMIT_URL"))
 
 
-def get_limits():
-    # Read limits from Excel file
-    limits_df = pd.read_excel('balance_limits.xlsx')
+def fetch_limits():
+    limits_df = pd.read_csv(BALANCE_LIMIT_URL)
 
     # Preprocess limits DataFrame into a dictionary for faster lookups
-    limits_dict = {(row['Platform'], row['Currency']): (row['Lower Limit'], row['Upper Limit'])
+    limits_dict = {(row['Platform'], row['Currency']): (row['Lower Limit'], row['Upper Limit'], row['Status'])
                    for _, row in limits_df.iterrows()}
 
     return limits_dict
@@ -67,13 +63,15 @@ def check_limit(response_data):
     if response_data['status_code'] != 200:
         return msg_data
 
+    csv_data = fetch_limits()
+
     for entry in response_data['data']:
         platform = str(entry['id']).lower()
         currency = str(entry['currency']).lower()
         balance = float(entry['balance'])
 
         # Retrieve limits from dictionary
-        lower_limit, upper_limit = get_limits().get((platform, currency), (-1, -1))
+        lower_limit, upper_limit, status = csv_data.get((platform, currency), (-1, -1, 'off'))
 
         data = {
             'platform': platform,
@@ -85,7 +83,7 @@ def check_limit(response_data):
         }
 
         # Check if balance falls below lower limit (if lower limit is specified)
-        if lower_limit != -1 and balance < lower_limit:
+        if lower_limit != -1 and balance < lower_limit and status == 'on':
             print(f"Warning: Balance is below for '{currency}' on {platform}"
                   f" [Limit: {lower_limit} {currency.upper()}, Balance: {balance}]")
 
@@ -93,7 +91,7 @@ def check_limit(response_data):
             msg_data.append(data)
 
         # Check if balance exceeds upper limit (if upper limit is specified)
-        if upper_limit != -1 and balance > upper_limit:
+        if upper_limit != -1 and balance > upper_limit and status == 'on':
             print(f"Warning: Balance exceeds for '{currency}' on {platform}"
                   f" [Limit: {upper_limit} {currency}, Balance: {balance}]")
 
