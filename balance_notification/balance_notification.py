@@ -85,7 +85,8 @@ def check_limit(response_data):
         # Check if balance falls below lower limit (if lower limit is specified)
         if lower_limit != -1 and balance < lower_limit and status == 'on':
             print(f"Warning: Balance is below for '{currency}' on {platform}"
-                  f" [Limit: {lower_limit} {currency.upper()}, Balance: {balance}]")
+                  f" [Limit: {lower_limit} {currency.upper()}, Balance: {balance}]"
+                  f' {time.strftime("%H:%M:%S", time.localtime())}')
 
             data['limit_type'] = 'lower'
             msg_data.append(data)
@@ -93,7 +94,8 @@ def check_limit(response_data):
         # Check if balance exceeds upper limit (if upper limit is specified)
         if upper_limit != -1 and balance > upper_limit and status == 'on':
             print(f"Warning: Balance exceeds for '{currency}' on {platform}"
-                  f" [Limit: {upper_limit} {currency}, Balance: {balance}]")
+                  f" [Limit: {upper_limit} {currency}, Balance: {balance}]"
+                  f' {time.strftime("%H:%M:%S", time.localtime())}')
 
             data['limit_type'] = 'upper'
             msg_data.append(data)
@@ -198,10 +200,12 @@ if __name__ == '__main__':
             if msgs:
                 messages = build_messages(msgs)
                 send_slack_message(messages)
+                time.sleep(180)
             else:
-                print(f'Script Running: All currencies are in the acceptable range!')
+                print(f'Script Running: All currencies are in the acceptable range!'
+                      f' {time.strftime("%H:%M:%S", time.localtime())}')
 
-            # Sleep for 3 minutes
-            time.sleep(180)
+            # Sleep for 2 minutes
+            time.sleep(120)
     except KeyboardInterrupt:
         print('Script Closing: You are now on your own')
